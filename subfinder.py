@@ -16,6 +16,7 @@ from oauth2client.file import Storage
 from apiclient.http import MediaFileUpload, MediaIoBaseDownload
 import textdetector as td
 import shutil
+import os
 NHILOS=1
 RUTASUBFINDER="VideoSubFinderWXW"
 CIVSF="-c -r "
@@ -60,7 +61,7 @@ for config in configurationGeneral:
             USECUDA=True
         else:
             USECUDA=False
-            CUDA_VISIBLE_DEVICES="-1"
+            os.environ["CUDA_VISIBLE_DEVICES"]="-1"
     if config == "cutVideoSubFinder":
         CVSF=configurationGeneral[config]
 
