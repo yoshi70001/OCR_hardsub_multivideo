@@ -60,6 +60,7 @@ for config in configurationGeneral:
             USECUDA=True
         else:
             USECUDA=False
+            CUDA_VISIBLE_DEVICES="-1"
     if config == "cutVideoSubFinder":
         CVSF=configurationGeneral[config]
 

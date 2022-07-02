@@ -6,7 +6,7 @@ import os
 import numpy as np
 from pathlib import Path
 import shutil
-CUDA_VISIBLE_DEVICES=""
+
 def borrador(dir_path):
     current_directory = Path(Path.cwd())
     dir_text=Path(f'{current_directory}/texto')
@@ -28,12 +28,12 @@ def borrador(dir_path):
         val=model.predict(images)
         if val==0:
             # print("0")
-            cv2.putText(imagen,"No texto",(50,25),cv2.FONT_HERSHEY_SIMPLEX,1.2,(0,255,0),2)
+            # cv2.putText(imagen,"No texto",(50,25),cv2.FONT_HERSHEY_SIMPLEX,1.2,(0,255,0),2)
             os.remove(dir_path+"/"+i)
             # os.rename(dir_path+"/"+i,"no_texto"+"/"+str(time())+i)
-        else:
+        # else:
             # print("1")
-            cv2.putText(imagen,"Texto",(50,25),cv2.FONT_HERSHEY_SIMPLEX,1.2,(0,255,0),2)
+            # cv2.putText(imagen,"Texto",(50,25),cv2.FONT_HERSHEY_SIMPLEX,1.2,(0,255,0),2)
             # os.rename(dir_path+"/"+i,"texto"+"/"+i)
             # shutil.copyfile(dir_path+"/"+i,"texto"+"/"+str(time())+i)
         

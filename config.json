@@ -1,9 +1,0 @@
-{
-    "nthreads": 15,
-    "removeFiles": true,
-    "ruteVideoSubfinder.exe": "VideoSubFinderWXW",
-    "configInitVideoSubFinder": "-c -r -nthr 4",
-    "searchMotor": "-ovffmpeg -uc",
-    "useCuda": true,
-    "cutVideoSubFinder": "-te 0.3 -be 0.0 -le 0.0 -re 1.0"
-}
