@@ -1,10 +1,9 @@
 import json
-
+from time import time
 from pathlib import Path
 from os import path, scandir,remove
 from subprocess import run, CalledProcessError
 from concurrent.futures import ThreadPoolExecutor
-from sqlalchemy import false, true
 from tqdm import tqdm
 from httplib2 import Http
 from shutil import rmtree,move
@@ -15,15 +14,15 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 from apiclient.http import MediaFileUpload, MediaIoBaseDownload
-
-
+import textdetector as td
+import shutil
 NHILOS=1
 RUTASUBFINDER="VideoSubFinderWXW"
 CIVSF="-c -r "
 MOTOR="-ovocv"
 USECUDA=""
 CVSF="-te 0.3 -be 0.0 -le 0.0 -re 1.0"
-REMOVEFILES=true
+REMOVEFILES=True
 
 # cargamos la configuracion
 text_configure = Path(f'{Path(Path.cwd())}/config.json')
@@ -36,17 +35,20 @@ if not text_configure.exists():
     configuration.close()
 configuration=open('./config.json', 'r', encoding='utf-8')
 configurationGeneral=configuration.read()
-configurationGeneral=json.loads(configurationGeneral)
+configurationGeneral=json.loads(str(configurationGeneral))
 configuration.close()
 
 for config in configurationGeneral:
+    print("config : "+config +" -- Value : "+str(configurationGeneral[config]))
     if config =="nthreads":
         NHILOS=int(configurationGeneral[config])
     if config == "removeFiles":
-        if configurationGeneral[config]=="true":
-            REMOVEFILES=true
+        if configurationGeneral[config]:
+            REMOVEFILES=True
         else:
-            REMOVEFILES=false
+            REMOVEFILES=False
+        # print(type(configurationGeneral[config]))
+        # print(REMOVEFILES)
     if config == "ruteVideoSubfinder.exe":
         RUTASUBFINDER=configurationGeneral[config]
     if config == "configInitVideoSubFinder":
@@ -54,7 +56,10 @@ for config in configurationGeneral:
     if config == "searchMotor":
         MOTOR=configurationGeneral[config]
     if config == "useCuda":
-        USECUDA=configurationGeneral[config]
+        if configurationGeneral[config]:
+            USECUDA=True
+        else:
+            USECUDA=False
     if config == "cutVideoSubFinder":
         CVSF=configurationGeneral[config]
 
@@ -78,6 +83,9 @@ def filtradoNombre(nombre):
     x=sub(r"\.mp4$","",x)
     x=sub(r"\.mkv$","",x) 
     return x
+
+
+
 
 def get_credentials():
     """Gets valid user credentials from storage.
@@ -104,6 +112,7 @@ def get_credentials():
 
 def extractor_Google(nombre):
     try:
+
         credentials = get_credentials()
         http = credentials.authorize(Http())
         service = discovery.build('drive', 'v3', http=http)
@@ -124,7 +133,7 @@ def extractor_Google(nombre):
             images_dir.mkdir()
             print('Images folder is empty.')
             exit()
-
+        
         if not raw_texts_dir.exists():
             raw_texts_dir.mkdir()
         else:
@@ -213,7 +222,11 @@ def extractor_Google(nombre):
 
             line += 1
             # borramos la imagen
-            if REMOVEFILES==true :
+            if REMOVEFILES==True :
+                if len(text_content)>0:
+                    shutil.copyfile(image.absolute(),"D:\PROCESO\EXTRACTOR DE SUBS2\COMPILADO/texto"+"/"+str(time())+image.name)
+                else:
+                    shutil.copyfile(image.absolute(),"D:\PROCESO\EXTRACTOR DE SUBS2\COMPILADO/no_texto"+"/"+str(time())+image.name)
                 remove(image.absolute())
             # remove(txtfile)
             #print(f"{imgname} Done.")
@@ -269,7 +282,7 @@ def mover(nom):
     #cambiar por la ruta de RGBImages de su Videosubfinder
     #ademas añadir VideoSubfinder a el path
     folder=scandir(f'D:\Programas de subtitulos\Release_x64\RGBImages')
-    
+    td.borrador('D:\Programas de subtitulos\Release_x64\RGBImages')
     for bitmap in folder:
         
         rutaimagen=Path(f"{nombreimagen}/{bitmap.name}")
@@ -300,16 +313,17 @@ for video in videos:
             # cd=f'VideoSubFinderWXW -c -r -i "{video.path}" -ovffmpeg -uc -te 0.3 -be 0.0 -le 0.0 -re 1.0' #usar si tiene instalado ffmpeg y tiene activo cuda (solo para gpu nvidia)
             # cd=f'VideoSubFinderWXW -c -r -i "{video.path}" -ovocv -te 0.3 -be 0.0 -le 0.0 -re 1.0'  #todos los demas casos 
             # print(f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}')
-            cd=f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}'  #todos los demas casos 
+            cd=f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} -nthr 4 {CVSF}'  #todos los demas casos 
             comando(cd)
             print("\n---------Moviendo imagenes-----------")
             mover(video.name)
+        
         result=excutor.submit(extractor_Google,video.name)
         procesos.append(result)
         
     except Exception as ex:
         print(ex)
-excutor.shutdown(wait=true)
+excutor.shutdown(wait=True)
 if REMOVEFILES :
     print("Removiendo archivos")
     for proceso in procesos :
