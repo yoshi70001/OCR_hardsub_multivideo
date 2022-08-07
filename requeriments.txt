@@ -1,9 +1,10 @@
 json
 pathlib
+time
+threading
 os
 subprocess
 concurrent
-sqlalchemy
 tqdm
 httplib2
 shutil
@@ -11,5 +12,11 @@ io
 re
 apiclient
 oauth2client
-apiclient
 google-api-python-client
+numpy
+scipy
+jupyter
+matplotlib
+Pillow
+scikit-learn
+tensorflow
