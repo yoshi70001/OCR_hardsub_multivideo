@@ -1,6 +1,7 @@
 import json
-from time import time
+from time import time,sleep
 from pathlib import Path
+import threading
 from os import path, scandir, remove
 from subprocess import run, CalledProcessError
 from concurrent.futures import ThreadPoolExecutor
@@ -24,7 +25,7 @@ MOTOR = "-ovocv"
 USECUDA = ""
 CVSF = "-te 0.3 -be 0.0 -le 0.0 -re 1.0"
 REMOVEFILES = True
-
+THREADS = 20
 # cargamos la configuracion
 text_configure = Path(f'{Path(Path.cwd())}/config.json')
 
@@ -81,7 +82,7 @@ SCOPES = 'https://www.googleapis.com/auth/drive'
 CLIENT_SECRET_FILE = 'credentials.json'
 APPLICATION_NAME = 'Drive API Python Quickstart'
 current_directory = Path(Path.cwd())
-
+list_list={}
 
 def filtradoNombre(nombre):
     x = sub(r"\.avi$", "", nombre)
@@ -124,8 +125,10 @@ def extractor_Google(nombre):
 
         # imgfile = 'image.jpeg'  # Image with texts (png, jpg, bmp, gif, pdf)
         # txtfile = 'text.txt'  # Text file outputted by OCR
-
+        
         nombre = filtradoNombre(nombre)
+
+        list_list[nombre]={}
 
         images_dir = Path(f'{current_directory}/{nombre}')
         raw_texts_dir = Path(f'{current_directory}/{nombre}/raw_texts')
@@ -134,6 +137,9 @@ def extractor_Google(nombre):
             Path(f'{current_directory}/Subtitles/{nombre}.srt'), 'a', encoding='utf-8')
         line = 1
 
+
+        images2 = []
+        threads = []
         # check directory if exists
         if not images_dir.exists():
             images_dir.mkdir()
@@ -155,26 +161,67 @@ def extractor_Google(nombre):
             pass
 
         images = Path(images_dir).rglob('*.jpeg')
-        for image in tqdm(images, desc=nombre):
+        for image in images:
+            images2.append(image)
 
+        for image in images2:
+            t = threading.Thread(target=ocr_image, args=[image, line, credentials, current_directory,nombre])
+            line += 1
+            while len(threads) > THREADS:
+
+                for thread in range(len(threads), 0, -1):
+                    thread = thread - 1
+                    if not threads[thread].is_alive():
+                        threads.pop(thread)
+            t.start()
+            sleep(0.25)
+            threads.append(t)
+            if image == images2[-1]:
+                for thread in threads:
+                    thread.join()
+
+        for i in sorted(list_list[nombre]):
+            srt_file.writelines(list_list[nombre][i])
+        srt_file.close()
+
+
+        return images_dir
+    except OSError as err:
+        print("OS error: {0}".format(err))
+        extractor_Google(nombre)
+    except ValueError:
+        print("Could not convert data to an integer.")
+        extractor_Google(nombre)
+    except BaseException as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        extractor_Google(nombre)
+
+
+
+def ocr_image(image, line, credentials, current_directory,nombre):
+    tries = 0
+    while True:
+        try:
+            http = credentials.authorize(Http())
+            service = discovery.build('drive', 'v3', http=http)
             # Get data
             imgfile = str(image.absolute())
             imgname = str(image.name)
-            raw_txtfile = f'{current_directory}/{nombre.replace(".mp4","")}/raw_texts/{imgname[:-5]}.txt'
-            txtfile = f'{current_directory}/{nombre.replace(".mp4","")}/texts/{imgname[:-5]}.txt'
-
+            raw_txtfile = f'{current_directory}/{nombre}/raw_texts/{imgname[:-5]}.txt'
+            txtfile = f'{current_directory}/{nombre}/texts/{imgname[:-5]}.txt'
+        
             mime = 'application/vnd.google-apps.document'
             conforme = True
             while conforme:
                 try:
                     res = service.files().create(
-                        body={
-                            'name': imgname,
-                            'mimeType': mime
-                        },
-                        media_body=MediaFileUpload(
-                            imgfile, mimetype=mime, resumable=True)
-                    ).execute()
+                            body={
+                                'name': imgname,
+                                'mimeType': mime
+                            },
+                            media_body=MediaFileUpload(
+                                imgfile, mimetype=mime, resumable=True)
+                        ).execute()
                     break
                 except:
                     print('\nerror al subir imagen')
@@ -189,12 +236,23 @@ def extractor_Google(nombre):
                     break
                 except:
                     print('\nerror al descargar archivo')
-
+            
+            done = False
             while done is False:
                 status, done = downloader.next_chunk()
-
-            service.files().delete(fileId=res['id']).execute()
-
+            try:
+                service.files().delete(fileId=res['id']).execute()
+            except:
+                sleep(1)
+                try:
+                    service.files().delete(fileId=res['id']).execute()
+                except:
+                    sleep(5)
+                    try:
+                        service.files().delete(fileId=res['id']).execute()
+                    except:
+                        raise
+        
             # Create clean text file
             raw_text_file = open(raw_txtfile, 'r', encoding='utf-8')
             text_content = raw_text_file.read()
@@ -204,63 +262,41 @@ def extractor_Google(nombre):
             text_file = open(txtfile, 'w', encoding='utf-8')
             text_file.write(text_content)
             text_file.close()
-
+        
             start_hour = imgname.split('_')[0][:2]
             start_min = imgname.split('_')[1][:2]
             start_sec = imgname.split('_')[2][:2]
             start_micro = imgname.split('_')[3][:3]
-
+        
             end_hour = imgname.split('__')[1].split('_')[0][:2]
             end_min = imgname.split('__')[1].split('_')[1][:2]
             end_sec = imgname.split('__')[1].split('_')[2][:2]
             end_micro = imgname.split('__')[1].split('_')[3][:3]
-
+        
             # Format start time
             start_time = f'{start_hour}:{start_min}:{start_sec},{start_micro}'
-
+        
             # Format end time
             end_time = f'{end_hour}:{end_min}:{end_sec},{end_micro}'
             # Append the line to srt file
-            srt_file.writelines([
+            list_list[nombre][line] = [
                 f'{line}\n',
                 f'{start_time} --> {end_time}\n',
                 f'{text_content}\n\n',
                 ''
-            ])
-
-            line += 1
+            ]
+        
+            print(f"{imgname} Done.")
             # borramos la imagen
             if REMOVEFILES == True:
-                # if len(text_content)>0:
-                #     shutil.copyfile(image.absolute(),"D:\PROCESO\EXTRACTOR DE SUBS2\COMPILADO/texto"+"/"+str(time())+image.name)
-                # else:
-                #     shutil.copyfile(image.absolute(),"D:\PROCESO\EXTRACTOR DE SUBS2\COMPILADO/no_texto"+"/"+str(time())+image.name)
                 remove(image.absolute())
-            # remove(txtfile)
-            #print(f"{imgname} Done.")
-        srt_file.close()
-        # verificamos que se hizo el ocr de todas las imagenes
-        # imagenes_images = Path(images_dir).rglob('*.jpeg')
-        # textos_images=Path(texts_dir).rglob('*.text')
-        # nro_imagenes=0;
-        # nro_textos=0;
-        # for imagen in imagenes_images:
-        #     nro_imagenes+=1
-        # for texto in textos_images:
-        #     nro_textos+=1
-        # if not nro_imagenes==nro_textos:
-        #     extractor_Google(nombre)
+            break
+        except:
+            tries +=1
+            if tries > 5:
+                raise
+            continue
 
-        return images_dir
-    except OSError as err:
-        print("OS error: {0}".format(err))
-        extractor_Google(nombre)
-    except ValueError:
-        print("Could not convert data to an integer.")
-        extractor_Google(nombre)
-    except BaseException as err:
-        print(f"Unexpected {err=}, {type(err)=}")
-        extractor_Google(nombre)
 
 
 def comando(comand):
@@ -291,6 +327,7 @@ def mover(nom):
     # ademas añadir VideoSubfinder a el path
     folder = scandir(f'D:\Programas de subtitulos\Release_x64\RGBImages')
     td.borrador('D:\Programas de subtitulos\Release_x64\RGBImages')
+    print("Moviendo Imaganes")
     for bitmap in folder:
 
         rutaimagen = Path(f"{nombreimagen}/{bitmap.name}")
@@ -322,9 +359,9 @@ for video in videos:
             # cd=f'VideoSubFinderWXW -c -r -i "{video.path}" -ovocv -te 0.3 -be 0.0 -le 0.0 -re 1.0'  #todos los demas casos
             # print(f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}')
             # todos los demas casos
-            cd = f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} -nthr 4 {CVSF}'
+            cd = f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}'
             comando(cd)
-            print("\n---------Moviendo imagenes-----------")
+            # print("\n---------Moviendo imagenes-----------")
             mover(video.name)
 
         result = excutor.submit(extractor_Google, video.name)
