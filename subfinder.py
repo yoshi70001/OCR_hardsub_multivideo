@@ -15,14 +15,16 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 from apiclient.http import MediaFileUpload, MediaIoBaseDownload
-import textdetectorV2 as td
+
+#import textdetectorV2 as td
 
 NHILOS = 1
-RUTASUBFINDER = "VideoSubFinderWXW"
-CIVSF = "-c -r "
-MOTOR = "-ovocv"
-USECUDA = ""
-CVSF = "-te 0.3 -be 0.0 -le 0.0 -re 1.0"
+RUTASUBFINDER = ["VideoSubFinderWXW"]
+RUTARGBIMAGES = [""]
+CIVSF = ['-c', '-r']
+MOTOR = ['-ovocv']
+USECUDA = [""]
+CVSF = ['-te', '0.3', '-be' ,'0.0', '-le', '0.0', '-re', '1.0']
 REMOVEFILES = True
 THREADS = 20
 # cargamos la configuracion
@@ -53,6 +55,8 @@ for config in configurationGeneral:
         # print(REMOVEFILES)
     if config == "ruteVideoSubfinder.exe":
         RUTASUBFINDER = configurationGeneral[config]
+    if config == "ruteRGBImages":
+        RUTARGBIMAGES = configurationGeneral[config]
     if config == "configInitVideoSubFinder":
         CIVSF = configurationGeneral[config]
     if config == "searchMotor":
@@ -299,7 +303,10 @@ def ocr_image(image, line, credentials, current_directory,nombre):
 
 
 def comando(comand):
-
+    import platform
+    if platform.system()=="Linux":
+        comand=["wine"]+comand
+        print(["wine"]+comand)
     try:
         resultado = run(comand, shell=False)
     except CalledProcessError as err:
@@ -324,8 +331,8 @@ def mover(nom):
         nombreimagen.mkdir()
     # cambiar por la ruta de RGBImages de su Videosubfinder
     # ademas añadir VideoSubfinder a el path
-    folder = scandir(f'D:\Programas de subtitulos\Release_x64\RGBImages')
-    td.borrador('D:\Programas de subtitulos\Release_x64\RGBImages')
+    folder = scandir(RUTARGBIMAGES[0])
+    #td.borrador('D:\Programas de subtitulos\Release_x64\RGBImages')
     print("Moviendo Imaganes")
     for bitmap in folder:
 
@@ -344,7 +351,7 @@ if not Subtitles_dir.exists():
     Subtitles_dir.mkdir()
 
 
-videos = scandir(f'{current_directory}\Videos')
+videos = scandir(f'{current_directory}/Videos')
 print("Iniciando proceso")
 
 procesos = []
@@ -358,7 +365,7 @@ for video in videos:
             # cd=f'VideoSubFinderWXW -c -r -i "{video.path}" -ovocv -te 0.3 -be 0.0 -le 0.0 -re 1.0'  #todos los demas casos
             # print(f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}')
             # todos los demas casos
-            cd = f'{RUTASUBFINDER} {CIVSF} -i "{video.path}" {MOTOR} {CVSF}'
+            cd = RUTASUBFINDER+CIVSF+ ["-i"]+[video.path]+MOTOR+ CVSF
             comando(cd)
             # print("\n---------Moviendo imagenes-----------")
             mover(video.name)
