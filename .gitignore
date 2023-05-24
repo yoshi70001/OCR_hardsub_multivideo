@@ -4,3 +4,6 @@ Subtitles
 token.json
 config.json
 __pycache__
+dist
+build
+subfinderv2.spec
