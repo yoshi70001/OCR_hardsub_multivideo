@@ -1,0 +1,1 @@
+{"nthreads": 4,"removeFiles":true,"ruteVideoSubfinder.exe":"VideoSubFinderWXW","ruteVideoSubfinderRGBImages":"","configInitVideoSubFinder":"-c -r ","searchMotor":"-ovocv", "useCuda":false,"cutVideoSubFinder":"-te 0.3 -be 0.0 -le 0.0 -re 1.0"}
