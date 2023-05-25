@@ -10,11 +10,11 @@ from httplib2 import Http
 from shutil import rmtree, move
 import io
 from re import sub
-from apiclient import discovery
+from googleapiclient import discovery
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-from apiclient.http import MediaFileUpload, MediaIoBaseDownload
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from textdetectorv3 import imgExtractor
 import re
 
@@ -362,7 +362,7 @@ if not Subtitles_dir.exists():
     Subtitles_dir.mkdir()
 
 
-videos = scandir(f'{current_directory}\Videos')
+videos = scandir(f'{current_directory}/Videos')
 print("Iniciando proceso")
 
 procesos = []
