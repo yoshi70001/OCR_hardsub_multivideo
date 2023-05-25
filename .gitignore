@@ -7,3 +7,5 @@ __pycache__
 dist
 build
 subfinderv2.spec
+node_modules
+build
