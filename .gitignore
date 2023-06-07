@@ -1,3 +1,12 @@
+credentials.json
+Videos
+Subtitles
+token.json
+config.json
+__pycache__
+dist
+build
+subfinderv2.spec
 # Build
 /dist
 /lib
@@ -37,3 +46,4 @@ lerna-debug.log*
 # Yarn
 .yarn/*
 !.yarn/releases
+node_modules
