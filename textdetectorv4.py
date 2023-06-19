@@ -7,9 +7,10 @@ from re import sub
 import numpy as np
 provider = []
 
-if rt.get_available_providers().index('DmlExecutionProvider')!=-1:
-    provider.append('DmlExecutionProvider')
-else:
+for providerElement in rt.get_available_providers():
+    if( providerElement == 'DmlExecutionProvider'):
+        provider.append('DmlExecutionProvider')
+if(len(provider)==0):
     provider.append('CPUExecutionProvider')
 
 sess = rt.InferenceSession('9-5-23.onnx', providers=provider)
