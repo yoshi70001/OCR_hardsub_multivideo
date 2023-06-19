@@ -5,7 +5,11 @@ from re import sub
 from shutil import rmtree
 from subprocess import  CalledProcessError, run
 from textdetectorv4 import imgExtractor
+from decouple import config
 
+
+
+PYTHONPATH=config('PYTHONPATH')
 
 inUse=False
 def filtradoNombre(nombre):
@@ -47,7 +51,7 @@ def main():
                 print("\nExtrayendo imagenes de :"+str(video.name))
                 imgExtractor(video, excutor2)
                 #'cd "'+video.path+'"; python "' + str(current_directory)+'/ocrGoogle.py"'
-            comando(f'python "{current_directory}\\ocrGoogle.py"',str(current_directory)+'\\'+filtradoNombre(video.name),filtradoNombre(video.name),excutor3)
+            comando(f'{PYTHONPATH} "{current_directory}\\ocrGoogle.py"',str(current_directory)+'\\'+filtradoNombre(video.name),filtradoNombre(video.name),excutor3)
         except Exception as ex:
             print(ex)
     excutor2.shutdown(wait=True)
