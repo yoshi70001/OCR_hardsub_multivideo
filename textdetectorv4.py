@@ -5,17 +5,20 @@ import cv2
 import os
 from re import sub
 import numpy as np
+provider = []
 
+if rt.get_available_providers().index('DmlExecutionProvider')!=-1:
+    provider.append('DmlExecutionProvider')
+else:
+    provider.append('CPUExecutionProvider')
 
-
-sess = rt.InferenceSession('9-5-23.onnx', providers=['DmlExecutionProvider'])
+sess = rt.InferenceSession('9-5-23.onnx', providers=provider)
 input_name = sess.get_inputs()[0].name
 label_name = sess.get_outputs()[0].name
 
 
 # boxes
-sess2 = rt.InferenceSession('RCNN_600k3_10k.onnx', providers=[
-                            'DmlExecutionProvider'])
+sess2 = rt.InferenceSession('RCNN_600k3_10k.onnx', providers=provider)
 input_name2 = sess2.get_inputs()[0].name
 label_name2 = sess2.get_outputs()[0].name
 
