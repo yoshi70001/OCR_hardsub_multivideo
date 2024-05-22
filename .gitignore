@@ -1,0 +1,11 @@
+credentials.json
+Videos
+Subtitles
+token.json
+config.json
+__pycache__
+dist
+build
+subfinderv2.spec
+node_modules
+build
